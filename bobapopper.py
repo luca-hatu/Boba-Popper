@@ -119,15 +119,43 @@ def display_score_and_lives(score, streak, lives, bubble_tea_count):
         screen.blit(bubble_tea_image, bubble_tea_display_pos)
         screen.blit(bubble_tea_text, (bubble_tea_display_pos[0] + 50, bubble_tea_display_pos[1] + 10))
 
-# Function to display game over screen
+# Function to display game over screen and handle restart
 def display_game_over():
+    global score, streak, lives, bubble_tea_count
+    
     game_over_text = game_over_font.render('Game Over', True, RED)
     score_text = font.render(f'Final Score: {score}', True, BLACK)
+    
+    # Display game over and final score
     screen.fill(WHITE)
     screen.blit(game_over_text, (SCREEN_WIDTH // 2 - game_over_text.get_width() // 2, SCREEN_HEIGHT // 2 - game_over_text.get_height() // 2))
     screen.blit(score_text, (SCREEN_WIDTH // 2 - score_text.get_width() // 2, SCREEN_HEIGHT // 2 + game_over_text.get_height() // 2))
+
+    # Create restart button
+    restart_button = pygame.Rect(300, 400, 200, 50)
+    pygame.draw.rect(screen, BLACK, restart_button)
+    restart_text = font.render('Restart', True, WHITE)
+    screen.blit(restart_text, (restart_button.centerx - restart_text.get_width() // 2, restart_button.centery - restart_text.get_height() // 2))
+
     pygame.display.flip()
-    pygame.time.wait(3000)
+
+    # Wait for player to click restart
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                if restart_button.collidepoint(mouse_pos):
+                    # Reset game variables
+                    score = 0
+                    streak = 0
+                    lives = 3
+                    bubble_tea_count = 0
+                    return True
+    return False
 
 # Main game loop
 frame_count = 0
@@ -144,9 +172,22 @@ while running:
 
     # Check if the player has no lives left
     if lives <= 0:
-        display_game_over()
-        running = False
-        break
+        if display_game_over():
+            # Reset game state
+            boba_list = []
+            bomb_list = []
+            booster_list = []
+            shield_list = []
+            frame_count = 0
+            bubble_tea_timer = 0
+            blink_start_time = None
+            score = 0
+            streak = 0
+            lives = 3
+            bubble_tea_count = 0
+        else:
+            running = False
+            break
 
     # Spawn bobas
     if frame_count % boba_spawn_rate == 0:
@@ -171,7 +212,6 @@ while running:
         x = random.randint(shield_booster_image.get_width(), SCREEN_WIDTH - shield_booster_image.get_width())
         y = random.randint(shield_booster_image.get_height(), SCREEN_HEIGHT - shield_booster_image.get_height())
         shield_list.append(pygame.Rect(x, y, shield_booster_image.get_width(), shield_booster_image.get_height()))
-
 
     # Draw bobas
     for boba in boba_list:
