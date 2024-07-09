@@ -149,6 +149,12 @@ def display_game_over():
     restart_text = font.render('Restart', True, WHITE)
     screen.blit(restart_text, (restart_button.centerx - restart_text.get_width() // 2, restart_button.centery - restart_text.get_height() // 2))
 
+    # Create restart button
+    restart_button = pygame.Rect(300, 400, 200, 50)
+    pygame.draw.rect(screen, BLACK, restart_button)
+    restart_text = font.render('Restart', True, WHITE)
+    screen.blit(restart_text, (restart_button.centerx - restart_text.get_width() // 2, restart_button.centery - restart_text.get_height() // 2))
+   
     # Create leaderboard button
     leaderboard_button = pygame.Rect(300, 470, 200, 50)
     pygame.draw.rect(screen, BLACK, leaderboard_button)
@@ -214,6 +220,42 @@ def display_leaderboard():
                 mouse_pos = pygame.mouse.get_pos()
                 if back_button.collidepoint(mouse_pos):
                     return
+    # Function to display pause menu
+def display_pause_menu():
+    screen.fill(WHITE)
+    
+    pause_text = game_over_font.render('Paused', True, BLACK)
+    screen.blit(pause_text, (SCREEN_WIDTH // 2 - pause_text.get_width() // 2, 200))
+
+    # Create resume button
+    resume_button = pygame.Rect(300, 300, 200, 50)
+    pygame.draw.rect(screen, BLACK, resume_button)
+    resume_text = font.render('Resume', True, WHITE)
+    screen.blit(resume_text, (resume_button.centerx - resume_text.get_width() // 2, resume_button.centery - resume_text.get_height() // 2))
+
+    # Create exit to menu button
+    exit_button = pygame.Rect(300, 370, 200, 50)
+    pygame.draw.rect(screen, BLACK, exit_button)
+    exit_text = font.render('Exit to Menu', True, WHITE)
+    screen.blit(exit_text, (exit_button.centerx - exit_text.get_width() // 2, exit_button.centery - exit_text.get_height() // 2))
+    
+    pygame.display.flip()
+
+    # Wait for player to click resume or exit to menu
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                if resume_button.collidepoint(mouse_pos):
+                    return 'resume'
+                elif exit_button.collidepoint(mouse_pos):
+                    return 'exit_to_menu'
+    return 'pause'           
+    
 
 # Function to save the game state
 def save_game():
@@ -412,7 +454,8 @@ while running:
                 shield_active = True
                 shield_timer = shield_effect_duration
                 shield_sound.play()
-
+            elif pygame.KEYDOWN == pygame.K_p:
+                    pause_result = display_pause_menu()
         if bubble_tea_rect and bubble_tea_rect.collidepoint(mouse_pos):
             bubble_tea_rect = None
             bubble_tea_count += 1
