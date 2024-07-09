@@ -13,11 +13,12 @@ SCREEN_HEIGHT = 600
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
-BACKGROUND_COLOR = (176, 127, 76)
+# Define the background color (change this to your desired color)
+BACKGROUND_COLOR = (173, 216, 230)  # Light blue
 
 # Set up the display
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption('Boba Popper')
+pygame.display.set_caption('Pop the Bobas')
 
 # Clock to control the frame rate
 clock = pygame.time.Clock()
@@ -27,9 +28,13 @@ pop_sound = pygame.mixer.Sound('pop.mp3')
 explosion_sound = pygame.mixer.Sound('explosion.mp3')
 
 # Boba settings
-boba_size = 20
+boba_size = 40
 boba_spawn_rate = 30  # Number of frames between each boba spawn
 boba_list = []
+
+# Load the boba image
+boba_image = pygame.image.load('boba.png')
+boba_image = pygame.transform.scale(boba_image, (boba_size, boba_size))
 
 # Bomb settings
 bomb_size = 50
@@ -46,29 +51,52 @@ empty_heart_image = pygame.image.load('empty-heart.png')
 full_heart_image = pygame.transform.scale(full_heart_image, (30, 30))
 empty_heart_image = pygame.transform.scale(empty_heart_image, (30, 30))
 
+# Load bubble tea image
+bubble_tea_image = pygame.image.load('bubble-tea.png')
+bubble_tea_image = pygame.transform.scale(bubble_tea_image, (50, 50))
+bubble_tea_count = 0
+bubble_tea_display_time = 200  # Frames to display bubble tea
+bubble_tea_rect = None
+
+# Position to display bubble tea count
+bubble_tea_display_pos = (650, 10)
+
 # Game variables
 score = 0
 streak = 0
 lives = 3
 max_lives = 3
 
+# Blinking variables
+blink_duration = 500  # Duration of the blink in milliseconds
+blink_start_time = None
+
 # Font for displaying the score and game over text
 font = pygame.font.SysFont(None, 36)
 game_over_font = pygame.font.SysFont(None, 72)
 
 # Function to display score and lives
-def display_score_and_lives(score, streak, lives):
+def display_score_and_lives(score, streak, lives, bubble_tea_count):
     score_text = font.render(f'Score: {score}  Streak: {streak}', True, BLACK)
     screen.blit(score_text, (10, 10))
     
-    # Display hearts
+    current_time = pygame.time.get_ticks()
     for i in range(max_lives):
         if i < lives:
-            screen.blit(full_heart_image, (10 + i * 35, 50))
+            if blink_start_time and current_time - blink_start_time < blink_duration and i == lives:
+                if (current_time // 100) % 2 == 0:
+                    screen.blit(empty_heart_image, (10 + i * 35, 50))
+                else:
+                    screen.blit(full_heart_image, (10 + i * 35, 50))
+            else:
+                screen.blit(full_heart_image, (10 + i * 35, 50))
         else:
             screen.blit(empty_heart_image, (10 + i * 35, 50))
     
-    current_time = pygame.time.get_ticks()
+    if bubble_tea_count > 0:
+        bubble_tea_text = font.render(f'x{bubble_tea_count}', True, BLACK)
+        screen.blit(bubble_tea_image, bubble_tea_display_pos)
+        screen.blit(bubble_tea_text, (bubble_tea_display_pos[0] + 50, bubble_tea_display_pos[1] + 10))
 
 # Function to display game over screen
 def display_game_over():
@@ -83,11 +111,14 @@ def display_game_over():
 # Main game loop
 frame_count = 0
 running = True
+bubble_tea_timer = 0
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
     
+    # Fill the screen with the background color
     screen.fill(BACKGROUND_COLOR)
 
     # Check if the player has no lives left
@@ -110,7 +141,7 @@ while running:
 
     # Draw bobas
     for boba in boba_list:
-        pygame.draw.circle(screen, BLACK, boba.center, boba_size // 2)
+        screen.blit(boba_image, boba.topleft)
 
     # Draw bombs
     for bomb in bomb_list:
@@ -127,6 +158,13 @@ while running:
                 streak += 1
                 pop_sound.play()
 
+                # Check if a bubble tea should appear
+                if score % 10 == 0:
+                    x = random.randint(boba_size, SCREEN_WIDTH - boba_size)
+                    y = random.randint(boba_size, SCREEN_HEIGHT - boba_size)
+                    bubble_tea_rect = pygame.Rect(x, y, 50, 50)
+                    bubble_tea_timer = bubble_tea_display_time
+
         for bomb in bomb_list[:]:
             if bomb.collidepoint(mouse_pos):
                 bomb_list.remove(bomb)
@@ -135,8 +173,17 @@ while running:
                 explosion_sound.play()
                 blink_start_time = pygame.time.get_ticks()
 
+        if bubble_tea_rect and bubble_tea_rect.collidepoint(mouse_pos):
+            bubble_tea_rect = None
+            bubble_tea_count += 1
+
+    # Draw bubble tea if it should be displayed
+    if bubble_tea_rect and bubble_tea_timer > 0:
+        screen.blit(bubble_tea_image, bubble_tea_rect.topleft)
+        bubble_tea_timer -= 1
+
     # Display score, streak, and lives
-    display_score_and_lives(score, streak, lives)
+    display_score_and_lives(score, streak, lives, bubble_tea_count)
 
     pygame.display.flip()
     clock.tick(60)
