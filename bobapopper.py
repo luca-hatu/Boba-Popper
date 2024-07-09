@@ -26,6 +26,9 @@ clock = pygame.time.Clock()
 # Load sounds
 pop_sound = pygame.mixer.Sound('pop.mp3')
 explosion_sound = pygame.mixer.Sound('explosion.mp3')
+booster_sound = pygame.mixer.Sound('booster.mp3')
+bubble_tea_sound = pygame.mixer.Sound('shake.mp3')
+shield_sound = pygame.mixer.Sound('booster.mp3')
 
 # Boba settings
 boba_size = 40
@@ -61,11 +64,20 @@ bubble_tea_rect = None
 # Load booster image
 booster_image = pygame.image.load('booster.png')
 booster_image = pygame.transform.scale(booster_image, (30, 30))
+shield_booster_image = pygame.image.load('shield.png')
+shield_booster_image = pygame.transform.scale(shield_booster_image, (30, 30))
+
 booster_list = []
-booster_spawn_rate = 900  # Number of frames between each booster spawn
-booster_effect_duration = 400  # Duration of the booster effect in frames
+booster_spawn_rate = 300  # Number of frames between each booster spawn
+booster_effect_duration = 600  # Duration of the booster effect in frames
 booster_active = False
 booster_timer = 0
+
+shield_list = []
+shield_spawn_rate = 500  # Number of frames between each shield spawn
+shield_effect_duration = 600  # Duration of the shield effect in frames
+shield_active = False
+shield_timer = 0
 
 # Position to display bubble tea count
 bubble_tea_display_pos = (650, 10)
@@ -154,6 +166,13 @@ while running:
         y = random.randint(booster_image.get_height(), SCREEN_HEIGHT - booster_image.get_height())
         booster_list.append(pygame.Rect(x, y, booster_image.get_width(), booster_image.get_height()))
 
+    # Spawn shield boosters
+    if frame_count % shield_spawn_rate == 0:
+        x = random.randint(shield_booster_image.get_width(), SCREEN_WIDTH - shield_booster_image.get_width())
+        y = random.randint(shield_booster_image.get_height(), SCREEN_HEIGHT - shield_booster_image.get_height())
+        shield_list.append(pygame.Rect(x, y, shield_booster_image.get_width(), shield_booster_image.get_height()))
+
+
     # Draw bobas
     for boba in boba_list:
         screen.blit(boba_image, boba.topleft)
@@ -165,6 +184,10 @@ while running:
     # Draw boosters
     for booster in booster_list:
         screen.blit(booster_image, booster.topleft)
+    
+    # Draw shield boosters
+    for shield in shield_list:
+        screen.blit(shield_booster_image, shield.topleft)
 
     # Check for mouse clicks
     mouse_pressed = pygame.mouse.get_pressed()
@@ -186,21 +209,35 @@ while running:
 
         for bomb in bomb_list[:]:
             if bomb.collidepoint(mouse_pos):
-                bomb_list.remove(bomb)
-                streak = 0
-                lives -= 1
-                explosion_sound.play()
-                blink_start_time = pygame.time.get_ticks()
+                if shield_active:
+                    bomb_list.remove(bomb)
+                    explosion_sound.play()
+                    shield_active = False
+                else:
+                    bomb_list.remove(bomb)
+                    streak = 0
+                    lives -= 1
+                    explosion_sound.play()
+                    blink_start_time = pygame.time.get_ticks()
         
         for booster in booster_list[:]:
             if booster.collidepoint(mouse_pos):
                 booster_list.remove(booster)
                 booster_active = True
                 booster_timer = booster_effect_duration
+                booster_sound.play()
+
+        for shield in shield_list[:]:
+            if shield.collidepoint(mouse_pos):
+                shield_list.remove(shield)
+                shield_active = True
+                shield_timer = shield_effect_duration
+                shield_sound.play()
 
         if bubble_tea_rect and bubble_tea_rect.collidepoint(mouse_pos):
             bubble_tea_rect = None
             bubble_tea_count += 1
+            bubble_tea_sound.play()
 
     # Draw bubble tea if it should be displayed
     if bubble_tea_rect and bubble_tea_timer > 0:
@@ -212,6 +249,12 @@ while running:
         booster_timer -= 1
         if booster_timer <= 0:
             booster_active = False
+
+    # Update shield state
+    if shield_active:
+        shield_timer -= 1
+        if shield_timer <= 0:
+            shield_active = False
     
     # Display score, streak, and lives
     display_score_and_lives(score, streak, lives, bubble_tea_count)
