@@ -58,6 +58,15 @@ bubble_tea_count = 0
 bubble_tea_display_time = 200  # Frames to display bubble tea
 bubble_tea_rect = None
 
+# Load booster image
+booster_image = pygame.image.load('booster.png')
+booster_image = pygame.transform.scale(booster_image, (30, 30))
+booster_list = []
+booster_spawn_rate = 900  # Number of frames between each booster spawn
+booster_effect_duration = 400  # Duration of the booster effect in frames
+booster_active = False
+booster_timer = 0
+
 # Position to display bubble tea count
 bubble_tea_display_pos = (650, 10)
 
@@ -139,6 +148,12 @@ while running:
         y = random.randint(bomb_size, SCREEN_HEIGHT - bomb_size)
         bomb_list.append(pygame.Rect(x, y, bomb_size, bomb_size))
 
+    # Spawn boosters
+    if frame_count % booster_spawn_rate == 0:
+        x = random.randint(booster_image.get_width(), SCREEN_WIDTH - booster_image.get_width())
+        y = random.randint(booster_image.get_height(), SCREEN_HEIGHT - booster_image.get_height())
+        booster_list.append(pygame.Rect(x, y, booster_image.get_width(), booster_image.get_height()))
+
     # Draw bobas
     for boba in boba_list:
         screen.blit(boba_image, boba.topleft)
@@ -146,6 +161,10 @@ while running:
     # Draw bombs
     for bomb in bomb_list:
         screen.blit(bomb_image, bomb.topleft)
+    
+    # Draw boosters
+    for booster in booster_list:
+        screen.blit(booster_image, booster.topleft)
 
     # Check for mouse clicks
     mouse_pressed = pygame.mouse.get_pressed()
@@ -154,7 +173,7 @@ while running:
         for boba in boba_list[:]:
             if boba.collidepoint(mouse_pos):
                 boba_list.remove(boba)
-                score += 1
+                score += 1 * (2 if booster_active else 1)
                 streak += 1
                 pop_sound.play()
 
@@ -172,6 +191,12 @@ while running:
                 lives -= 1
                 explosion_sound.play()
                 blink_start_time = pygame.time.get_ticks()
+        
+        for booster in booster_list[:]:
+            if booster.collidepoint(mouse_pos):
+                booster_list.remove(booster)
+                booster_active = True
+                booster_timer = booster_effect_duration
 
         if bubble_tea_rect and bubble_tea_rect.collidepoint(mouse_pos):
             bubble_tea_rect = None
@@ -182,6 +207,12 @@ while running:
         screen.blit(bubble_tea_image, bubble_tea_rect.topleft)
         bubble_tea_timer -= 1
 
+    # Update booster state
+    if booster_active:
+        booster_timer -= 1
+        if booster_timer <= 0:
+            booster_active = False
+    
     # Display score, streak, and lives
     display_score_and_lives(score, streak, lives, bubble_tea_count)
 
