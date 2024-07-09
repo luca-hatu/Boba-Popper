@@ -27,7 +27,7 @@ boba_spawn_rate = 30  # Number of frames between each boba spawn
 boba_list = []
 
 # Bomb settings
-bomb_size = 50
+bomb_size = 20
 bomb_spawn_rate = 100  # Number of frames between each bomb spawn
 bomb_list = []
 
@@ -35,17 +35,43 @@ bomb_list = []
 bomb_image = pygame.image.load('bomb.png')
 bomb_image = pygame.transform.scale(bomb_image, (bomb_size, bomb_size))
 
+# Load heart images
+full_heart_image = pygame.image.load('full-heart.png')
+empty_heart_image = pygame.image.load('empty-heart.png')
+full_heart_image = pygame.transform.scale(full_heart_image, (30, 30))
+empty_heart_image = pygame.transform.scale(empty_heart_image, (30, 30))
+
 # Game variables
 score = 0
 streak = 0
+lives = 3
+max_lives = 3
 
-# Font for displaying the score
+# Font for displaying the score and game over text
 font = pygame.font.SysFont(None, 36)
+game_over_font = pygame.font.SysFont(None, 72)
 
-# Function to display score
-def display_score(score, streak):
+# Function to display score and lives
+def display_score_and_lives(score, streak, lives):
     score_text = font.render(f'Score: {score}  Streak: {streak}', True, BLACK)
     screen.blit(score_text, (10, 10))
+    
+    # Display hearts
+    for i in range(max_lives):
+        if i < lives:
+            screen.blit(full_heart_image, (10 + i * 35, 50))
+        else:
+            screen.blit(empty_heart_image, (10 + i * 35, 50))
+
+# Function to display game over screen
+def display_game_over():
+    game_over_text = game_over_font.render('Game Over', True, RED)
+    score_text = font.render(f'Final Score: {score}', True, BLACK)
+    screen.fill(WHITE)
+    screen.blit(game_over_text, (SCREEN_WIDTH // 2 - game_over_text.get_width() // 2, SCREEN_HEIGHT // 2 - game_over_text.get_height() // 2))
+    screen.blit(score_text, (SCREEN_WIDTH // 2 - score_text.get_width() // 2, SCREEN_HEIGHT // 2 + game_over_text.get_height() // 2))
+    pygame.display.flip()
+    pygame.time.wait(3000)
 
 # Main game loop
 frame_count = 0
@@ -56,6 +82,12 @@ while running:
             running = False
     
     screen.fill(WHITE)
+
+    # Check if the player has no lives left
+    if lives <= 0:
+        display_game_over()
+        running = False
+        break
 
     # Spawn bobas
     if frame_count % boba_spawn_rate == 0:
@@ -91,9 +123,10 @@ while running:
             if bomb.collidepoint(mouse_pos):
                 bomb_list.remove(bomb)
                 streak = 0
+                lives -= 1
 
-    # Display score and streak
-    display_score(score, streak)
+    # Display score, streak, and lives
+    display_score_and_lives(score, streak, lives)
 
     pygame.display.flip()
     clock.tick(60)
