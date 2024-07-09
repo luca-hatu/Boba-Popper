@@ -13,13 +13,18 @@ SCREEN_HEIGHT = 600
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
+BACKGROUND_COLOR = (176, 127, 76)
 
 # Set up the display
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption('Pop the Bobas')
+pygame.display.set_caption('Boba Popper')
 
 # Clock to control the frame rate
 clock = pygame.time.Clock()
+
+# Load sounds
+pop_sound = pygame.mixer.Sound('pop.mp3')
+explosion_sound = pygame.mixer.Sound('explosion.mp3')
 
 # Boba settings
 boba_size = 20
@@ -27,7 +32,7 @@ boba_spawn_rate = 30  # Number of frames between each boba spawn
 boba_list = []
 
 # Bomb settings
-bomb_size = 20
+bomb_size = 50
 bomb_spawn_rate = 100  # Number of frames between each bomb spawn
 bomb_list = []
 
@@ -62,6 +67,8 @@ def display_score_and_lives(score, streak, lives):
             screen.blit(full_heart_image, (10 + i * 35, 50))
         else:
             screen.blit(empty_heart_image, (10 + i * 35, 50))
+    
+    current_time = pygame.time.get_ticks()
 
 # Function to display game over screen
 def display_game_over():
@@ -81,7 +88,7 @@ while running:
         if event.type == pygame.QUIT:
             running = False
     
-    screen.fill(WHITE)
+    screen.fill(BACKGROUND_COLOR)
 
     # Check if the player has no lives left
     if lives <= 0:
@@ -118,12 +125,15 @@ while running:
                 boba_list.remove(boba)
                 score += 1
                 streak += 1
+                pop_sound.play()
 
         for bomb in bomb_list[:]:
             if bomb.collidepoint(mouse_pos):
                 bomb_list.remove(bomb)
                 streak = 0
                 lives -= 1
+                explosion_sound.play()
+                blink_start_time = pygame.time.get_ticks()
 
     # Display score, streak, and lives
     display_score_and_lives(score, streak, lives)
