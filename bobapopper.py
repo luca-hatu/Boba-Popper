@@ -1,6 +1,8 @@
 import pygame
 import random
 import sys
+import os
+import pickle
 
 # Initialize Pygame
 pygame.init()
@@ -213,10 +215,92 @@ def display_leaderboard():
                 if back_button.collidepoint(mouse_pos):
                     return
 
+# Function to save the game state
+def save_game():
+    game_state = {
+        'score': score,
+        'streak': streak,
+        'lives': lives,
+        'bubble_tea_count': bubble_tea_count,
+        'boba_list': boba_list,
+        'bomb_list': bomb_list,
+        'booster_list': booster_list,
+        'shield_list': shield_list,
+        'booster_active': booster_active,
+        'booster_timer': booster_timer,
+        'shield_active': shield_active,
+        'shield_timer': shield_timer,
+        'frame_count': frame_count,
+        'high_scores': high_scores,
+        'last_eight_scores': last_eight_scores
+    }
+    with open('savegame.pkl', 'wb') as f:
+        pickle.dump(game_state, f)
+
+# Function to load the game state
+def load_game():
+    global score, streak, lives, bubble_tea_count, boba_list, bomb_list, booster_list, shield_list, booster_active, booster_timer, shield_active, shield_timer, frame_count, high_scores, last_eight_scores
+    with open('savegame.pkl', 'rb') as f:
+        game_state = pickle.load(f)
+        score = game_state['score']
+        streak = game_state['streak']
+        lives = game_state['lives']
+        bubble_tea_count = game_state['bubble_tea_count']
+        boba_list = game_state['boba_list']
+        bomb_list = game_state['bomb_list']
+        booster_list = game_state['booster_list']
+        shield_list = game_state['shield_list']
+        booster_active = game_state['booster_active']
+        booster_timer = game_state['booster_timer']
+        shield_active = game_state['shield_active']
+        shield_timer = game_state['shield_timer']
+        frame_count = game_state['frame_count']
+        high_scores = game_state['high_scores']
+        last_eight_scores = game_state['last_eight_scores']
+
+# Function to display start menu
+def display_start_menu():
+    screen.fill(BACKGROUND_COLOR)
+    
+    title_text = game_over_font.render('Pop the Bobas', True, BLACK)
+    screen.blit(title_text, (SCREEN_WIDTH // 2 - title_text.get_width() // 2, 200))
+
+    # Create start button
+    start_button = pygame.Rect(300, 300, 200, 50)
+    pygame.draw.rect(screen, BLACK, start_button)
+    start_text = font.render('Start', True, WHITE)
+    screen.blit(start_text, (start_button.centerx - start_text.get_width() // 2, start_button.centery - start_text.get_height() // 2))
+
+    # Create load game button
+    load_button = pygame.Rect(300, 370, 200, 50)
+    pygame.draw.rect(screen, BLACK, load_button)
+    load_text = font.render('Load Game', True, WHITE)
+    screen.blit(load_text, (load_button.centerx - load_text.get_width() // 2, load_button.centery - load_text.get_height() // 2))
+
+    pygame.display.flip()
+
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                if start_button.collidepoint(mouse_pos):
+                    return 'start'
+                elif load_button.collidepoint(mouse_pos):
+                    return 'load'
+
 # Main game loop
 frame_count = 0
 running = True
 bubble_tea_timer = 0
+
+# Display the start menu
+action = display_start_menu()
+if action == 'load':
+    load_game()
 
 while running:
     for event in pygame.event.get():
@@ -357,6 +441,10 @@ while running:
     pygame.display.flip()
     clock.tick(60)
     frame_count += 1
+
+    # Save game state every 10 seconds
+    if frame_count % 600 == 0:
+        save_game()
 
 pygame.quit()
 sys.exit()
