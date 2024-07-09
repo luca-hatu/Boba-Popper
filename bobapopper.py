@@ -88,6 +88,10 @@ streak = 0
 lives = 3
 max_lives = 3
 
+# Leaderboard variables
+high_scores = []
+last_eight_scores = []
+
 # Blinking variables
 blink_duration = 500  # Duration of the blink in milliseconds
 blink_start_time = None
@@ -121,10 +125,16 @@ def display_score_and_lives(score, streak, lives, bubble_tea_count):
 
 # Function to display game over screen and handle restart
 def display_game_over():
-    global score, streak, lives, bubble_tea_count
+    global score, streak, lives, bubble_tea_count, high_scores, last_eight_scores
     
     game_over_text = game_over_font.render('Game Over', True, RED)
     score_text = font.render(f'Final Score: {score}', True, BLACK)
+    
+    # Update leaderboard
+    high_scores.append(score)
+    high_scores = sorted(high_scores, reverse=True)[:3]
+    last_eight_scores.append(score)
+    last_eight_scores = last_eight_scores[-8:]
     
     # Display game over and final score
     screen.fill(WHITE)
@@ -137,9 +147,15 @@ def display_game_over():
     restart_text = font.render('Restart', True, WHITE)
     screen.blit(restart_text, (restart_button.centerx - restart_text.get_width() // 2, restart_button.centery - restart_text.get_height() // 2))
 
+    # Create leaderboard button
+    leaderboard_button = pygame.Rect(300, 470, 200, 50)
+    pygame.draw.rect(screen, BLACK, leaderboard_button)
+    leaderboard_text = font.render('Leaderboard', True, WHITE)
+    screen.blit(leaderboard_text, (leaderboard_button.centerx - leaderboard_text.get_width() // 2, leaderboard_button.centery - leaderboard_text.get_height() // 2))
+
     pygame.display.flip()
 
-    # Wait for player to click restart
+    # Wait for player to click restart or leaderboard
     waiting = True
     while waiting:
         for event in pygame.event.get():
@@ -154,8 +170,48 @@ def display_game_over():
                     streak = 0
                     lives = 3
                     bubble_tea_count = 0
-                    return True
-    return False
+                    return 'restart'
+                elif leaderboard_button.collidepoint(mouse_pos):
+                    return 'leaderboard'
+    return 'quit'
+
+# Function to display leaderboard
+def display_leaderboard():
+    screen.fill(WHITE)
+    
+    # Display top 3 scores
+    top_scores_text = game_over_font.render('Top 3 Scores', True, BLACK)
+    screen.blit(top_scores_text, (SCREEN_WIDTH // 2 - top_scores_text.get_width() // 2, 50))
+    for i, score in enumerate(high_scores):
+        score_text = font.render(f'{i+1}. {score}', True, BLACK)
+        screen.blit(score_text, (SCREEN_WIDTH // 2 - score_text.get_width() // 2, 120 + i * 40))
+    
+    # Display last 8 scores
+    last_scores_text = game_over_font.render('Last 8 Games', True, BLACK)
+    screen.blit(last_scores_text, (SCREEN_WIDTH // 2 - last_scores_text.get_width() // 2, 300))
+    for i, score in enumerate(last_eight_scores):
+        score_text = font.render(f'{i+1}. {score}', True, BLACK)
+        screen.blit(score_text, (SCREEN_WIDTH // 2 - score_text.get_width() // 2, 370 + i * 40))
+
+    # Create back button
+    back_button = pygame.Rect(300, 550, 200, 50)
+    pygame.draw.rect(screen, BLACK, back_button)
+    back_text = font.render('Back', True, WHITE)
+    screen.blit(back_text, (back_button.centerx - back_text.get_width() // 2, back_button.centery - back_text.get_height() // 2))
+    
+    pygame.display.flip()
+
+    # Wait for player to click back
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                if back_button.collidepoint(mouse_pos):
+                    return
 
 # Main game loop
 frame_count = 0
@@ -172,19 +228,17 @@ while running:
 
     # Check if the player has no lives left
     if lives <= 0:
-        if display_game_over():
-            # Reset game state
+        action = display_game_over()
+        if action == 'restart':
+            frame_count = 0
             boba_list = []
             bomb_list = []
             booster_list = []
             shield_list = []
-            frame_count = 0
-            bubble_tea_timer = 0
-            blink_start_time = None
-            score = 0
-            streak = 0
-            lives = 3
-            bubble_tea_count = 0
+            continue
+        elif action == 'leaderboard':
+            display_leaderboard()
+            continue
         else:
             running = False
             break
@@ -212,6 +266,7 @@ while running:
         x = random.randint(shield_booster_image.get_width(), SCREEN_WIDTH - shield_booster_image.get_width())
         y = random.randint(shield_booster_image.get_height(), SCREEN_HEIGHT - shield_booster_image.get_height())
         shield_list.append(pygame.Rect(x, y, shield_booster_image.get_width(), shield_booster_image.get_height()))
+
 
     # Draw bobas
     for boba in boba_list:
